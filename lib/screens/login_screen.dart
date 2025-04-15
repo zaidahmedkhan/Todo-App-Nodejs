@@ -1,31 +1,60 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:todo_app_nodejs/screens/login_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:todo_app_nodejs/screens/dashboard_screen.dart';
+import 'package:todo_app_nodejs/screens/signup_screen.dart';
 
-class SignUpPage extends StatefulWidget {
-  const SignUpPage({super.key});
+class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
 
   @override
-  State<SignUpPage> createState() => _SignUpPageState();
+  State<LoginPage> createState() => _LoginPageState();
 }
 
-class _SignUpPageState extends State<SignUpPage> {
+class _LoginPageState extends State<LoginPage> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   bool isLoading = false;
+  SharedPreferences? prefs;
 
-  void registerUser() async {
+  @override
+  void initState() {
+    super.initState();
+    initSharedPrefs();
+  }
+
+  void initSharedPrefs() async {
+    prefs = await SharedPreferences.getInstance();
+  }
+
+  void loginUser() async {
     if (emailController.text.isNotEmpty && passwordController.text.isNotEmpty) {
       var reqBody = {
         "email": emailController.text,
         "password": passwordController.text,
       };
       var response = await http.post(
-        Uri.parse("http://192.168.100.8:3000/registration"),
+        Uri.parse("http://192.168.100.8:3000/login"),
         headers: {'Content-Type': 'Application/json'},
         body: jsonEncode(reqBody),
       );
+
+      var jsonResponse = jsonDecode(response.body);
+
+      if (jsonResponse['status']) {
+        var myToken = jsonResponse['token'];
+        prefs?.setString("token", myToken);
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DashboardScreen(token: myToken),
+          ),
+        );
+      } else {
+        print("Something went wrong!");
+      }
+
       print("response : $response");
       print("status  : ${response.statusCode}");
     }
@@ -34,7 +63,7 @@ class _SignUpPageState extends State<SignUpPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Sign Up")),
+      appBar: AppBar(title: const Text("Log in")),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
@@ -52,18 +81,22 @@ class _SignUpPageState extends State<SignUpPage> {
             ),
             const SizedBox(height: 32),
             ElevatedButton(
-              onPressed: isLoading ? null : registerUser,
+              onPressed: isLoading ? null : loginUser,
               child:
                   isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text("Sign Up"),
+                      : const Text("Log in"),
             ),
-            const SizedBox(height: 25,),
+            const SizedBox(height: 25),
             GestureDetector(
-              onTap: (){
-                Navigator.push(context, MaterialPageRoute(builder: (context) => LoginPage()));
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => SignUpPage()),
+                );
               },
-              child: Text("Move to login screen")),
+              child: Text("Move to SignUp screen"),
+            ),
           ],
         ),
       ),

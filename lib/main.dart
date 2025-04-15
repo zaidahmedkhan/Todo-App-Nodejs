@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:todo_app_nodejs/screens/signup_screen.dart';
 
-void main() {
+void main() async {
   runApp(const MyApp());
 }
 
